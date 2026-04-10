@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install Python dependencies
+        run: pip3 install mistune beautifulsoup4
+
       - name: Render annotations for all articles
         run: |
           mkdir -p docs/articoli

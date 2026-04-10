@@ -2,12 +2,19 @@
 """
 render_authorship.py — Rende visibili le annotazioni di iA Writer su GitHub Pages.
 
-Uso:
-  # Renderizza un singolo articolo:
-  python scripts/render_authorship.py articoli/mio-articolo.md
+Strategia:
+  1. Converte il Markdown in HTML con mistune (HTML pulito).
+  2. Visita i nodi testo dell'HTML con BeautifulSoup.
+  3. Per ogni nodo testo, calcola l'offset nel sorgente Markdown cercando
+     la stringa corrispondente; applica i marker di paternità.
+  4. Sostituisce i nodi testo con frammenti HTML con <span>.
 
-  # Aggiorna README.md con la lista degli articoli:
-  python scripts/render_authorship.py --update-readme
+Uso:
+  python3 scripts/render_authorship.py articoli/mio-articolo.md
+  python3 scripts/render_authorship.py --update-readme
+
+Dipendenze:
+  pip3 install mistune beautifulsoup4 --break-system-packages
 """
 
 import argparse
@@ -16,13 +23,12 @@ import unicodedata
 from html import escape
 from pathlib import Path
 
-# URL base GitHub Pages — modifica con il tuo username/repo
-GITHUB_PAGES_BASE = "https://filippostrozzi.github.io/articoli-generati-con-ia"
+import mistune
+from bs4 import BeautifulSoup, NavigableString, Tag
 
-# Percorso output HTML
+GITHUB_PAGES_BASE = "https://avvocati-e-mac.github.io/articoli-generati-con-ia"
 DOCS_DIR = Path("docs/articoli")
 
-# Classi CSS per tipo di autore
 AUTHOR_KIND_CLASS = {
     "@": "author-human",
     "&": "author-ai",
@@ -30,10 +36,10 @@ AUTHOR_KIND_CLASS = {
 }
 
 ANNOTATION_BLOCK_START = re.compile(r"^\s*---\s*$")
-ANNOTATION_BLOCK_END = re.compile(r"^\s*\.\.\.\s*$")
+ANNOTATION_BLOCK_END   = re.compile(r"^\s*\.\.\.\s*$")
 
 
-# ── Parsing ──────────────────────────────────────────────────────────────────
+# ── Parsing ───────────────────────────────────────────────────────────────────
 
 
 def split_text_and_annotations(raw: str):
@@ -53,15 +59,10 @@ def split_text_and_annotations(raw: str):
     if end_idx is None:
         return raw, ""
     text_part = "".join(lines[:start_idx]).rstrip("\n")
-    annotations_part = "".join(lines[start_idx : end_idx + 1])
-    return text_part, annotations_part
+    return text_part, "".join(lines[start_idx: end_idx + 1])
 
 
 def parse_ranges(range_str: str):
-    """
-    "0,20 33,4 45 62,4" → [(0,20), (33,4), (45,1), (62,4)]
-    I token senza virgola hanno lunghezza 1.
-    """
     ranges = []
     for token in range_str.strip().split():
         if "," in token:
@@ -74,44 +75,168 @@ def parse_ranges(range_str: str):
 
 def parse_annotation_block(block: str):
     authors = []
-    for line in block.splitlines()[1:]:  # salta "---"
+    for line in block.splitlines()[1:]:
         if ANNOTATION_BLOCK_END.match(line):
             break
         if ":" not in line or not line.strip():
             continue
         key_part, value_part = line.split(":", 1)
         key = key_part.strip()
-        if key.lower().startswith("annotazioni") or key.lower().startswith("annotations"):
+        if key.lower().startswith(("annotazioni", "annotations")):
             continue
         if key and key[0] in ("@", "&", "*"):
             authors.append((key[0], key, parse_ranges(value_part)))
     return authors
 
 
-# ── Segmentazione ─────────────────────────────────────────────────────────────
+# ── Marker per carattere ─────────────────────────────────────────────────────
 
 
-def build_segments(text: str, authors):
+def build_markers(text: str, authors):
+    """Ritorna lista dove markers[i] = kind_char dell'autore al carattere i."""
     markers = [None] * len(text)
     for kind_char, _key, ranges in authors:
         for start, length in ranges:
-            start = max(0, min(start, len(text)))
-            end = max(0, min(start + length, len(text)))
-            for i in range(start, end):
+            s = max(0, min(start, len(text)))
+            e = max(0, min(start + length, len(text)))
+            for i in range(s, e):
                 markers[i] = kind_char
+    return markers
 
+
+# ── Markdown → testo puro (approssimazione per mapping offset) ────────────────
+
+
+def md_to_plain(text: str) -> str:
+    """
+    Rimuove la sintassi Markdown più comune per ottenere il testo
+    che compare nei nodi testo HTML dopo la conversione.
+    Usato per stimare l'offset nel sorgente.
+    """
+    # Rimuovi heading markers
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    # Rimuovi bold/italic
+    text = re.sub(r"\*{1,3}(.*?)\*{1,3}", r"\1", text)
+    text = re.sub(r"_{1,3}(.*?)_{1,3}", r"\1", text)
+    # Rimuovi link: [testo](url) → testo
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    # Rimuovi immagini
+    text = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    # Rimuovi codice inline
+    text = re.sub(r"`([^`]*)`", r"\1", text)
+    # Rimuovi blockquote
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)
+    # Rimuovi separatori HR
+    text = re.sub(r"^[-*_]{3,}\s*$", "", text, flags=re.MULTILINE)
+    return text
+
+
+# ── Applica span al testo di un nodo, cercando offset nel sorgente MD ─────────
+
+
+def annotate_text_node(node_text: str, src_text: str, markers, search_from: int):
+    """
+    Cerca node_text nel sorgente MD a partire da search_from.
+    Ritorna (html_fragment, new_search_from).
+    html_fragment: stringa HTML con span di paternità.
+    """
+    # Cerca la posizione nel sorgente (ignora whitespace multiplo)
+    # Prima prova esatta, poi con normalizzazione degli spazi
+    pos = src_text.find(node_text, search_from)
+    if pos == -1:
+        # fallback: cerca dopo aver normalizzato newlines
+        stripped = node_text.strip()
+        if stripped:
+            pos = src_text.find(stripped, search_from)
+        if pos == -1:
+            # non trovato: emetti testo senza annotazione
+            return escape(node_text), search_from
+
+    end_pos = pos + len(node_text)
+
+    # Costruisce i segmenti
     segments = []
-    if not text:
-        return segments
-    current = markers[0]
-    seg_start = 0
-    for i in range(1, len(text)):
-        if markers[i] != current:
-            segments.append((seg_start, i, current))
+    if pos >= len(markers):
+        return escape(node_text), end_pos
+
+    current_kind = markers[pos] if pos < len(markers) else None
+    seg_start = pos
+    for i in range(pos + 1, min(end_pos, len(markers))):
+        if markers[i] != current_kind:
+            segments.append((seg_start - pos, i - pos, current_kind))
             seg_start = i
-            current = markers[i]
-    segments.append((seg_start, len(text), current))
-    return segments
+            current_kind = markers[i]
+    segments.append((seg_start - pos, min(end_pos, len(markers)) - pos, current_kind))
+
+    # Gestisci caratteri oltre len(markers)
+    if end_pos > len(markers):
+        segments.append((len(markers) - pos, end_pos - pos, None))
+
+    parts = []
+    for local_start, local_end, kind in segments:
+        chunk = node_text[local_start:local_end]
+        if not chunk:
+            continue
+        if kind is None:
+            parts.append(escape(chunk))
+        else:
+            css = AUTHOR_KIND_CLASS.get(kind, "author-unknown")
+            parts.append(f'<span class="{css}">{escape(chunk)}</span>')
+
+    return "".join(parts), end_pos
+
+
+# ── Visita ricorsiva dei nodi testo ───────────────────────────────────────────
+
+
+def annotate_soup(soup: BeautifulSoup, src_text: str, markers):
+    """
+    Percorre tutti i nodi testo nell'HTML e li sostituisce con HTML annotato.
+    Mantiene un cursore search_from per trovare correttamente le posizioni
+    anche se lo stesso testo appare più volte.
+    """
+    search_from = 0
+
+    # Raccoglie tutti i nodi NavigableString in ordine di documento
+    text_nodes = list(soup.find_all(string=True))
+
+    for node in text_nodes:
+        # Salta script, style, code (non annotare codice tecnico)
+        parent = node.parent
+        if parent and parent.name in ("script", "style", "code", "pre"):
+            continue
+        if not node.strip():
+            continue
+
+        annotated_html, search_from = annotate_text_node(
+            str(node), src_text, markers, search_from
+        )
+
+        # Sostituisce il nodo testo con HTML parsato
+        new_tag = BeautifulSoup(annotated_html, "html.parser")
+        node.replace_with(new_tag)
+
+    return str(soup)
+
+
+# ── Pipeline principale ───────────────────────────────────────────────────────
+
+
+def render_article_html(md_text: str, authors) -> str:
+    # 1. Markdown → HTML pulito
+    md = mistune.create_markdown(
+        plugins=["table", "strikethrough", "footnotes", "task_lists"],
+    )
+    clean_html = md(md_text)
+
+    # 2. Costruisce i marker sull'intero testo sorgente
+    markers = build_markers(md_text, authors)
+
+    # 3. Annota i nodi testo nell'HTML
+    soup = BeautifulSoup(clean_html, "html.parser")
+    annotated = annotate_soup(soup, md_text, markers)
+
+    return annotated
 
 
 # ── Utilità ───────────────────────────────────────────────────────────────────
@@ -131,7 +256,7 @@ def extract_title(text: str) -> str:
     return "Articolo"
 
 
-# ── Rendering HTML ────────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 
 CSS = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -139,7 +264,7 @@ CSS = """
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.8;
   color: #24292f;
   background: #fff;
 }
@@ -155,6 +280,7 @@ body {
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 2rem;
   padding: 0.75rem 1rem;
   border: 1px solid #d0d7de;
@@ -166,38 +292,63 @@ body {
   display: inline-block;
   width: 14px; height: 14px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
-.swatch-human { background: rgba(0, 150, 255, 0.35); }
-.swatch-ai    { background: linear-gradient(90deg,
-                  rgba(255, 0, 150, 0.45), rgba(0, 200, 255, 0.45)); }
+.swatch-human { background: rgba(0, 150, 255, 0.45); }
+.swatch-ai    { background: linear-gradient(90deg, rgba(255,0,150,0.55), rgba(0,200,255,0.55)); }
 
-/* Testo */
-.article-body {
-  white-space: pre-wrap;
-  word-break: break-word;
+/* Tipografia */
+.article-body h1,
+.article-body h2,
+.article-body h3 { margin: 1.8rem 0 0.6rem; font-weight: 600; line-height: 1.3; }
+.article-body h1 { font-size: 1.9rem; margin-top: 0; }
+.article-body h2 { font-size: 1.4rem; }
+.article-body h3 { font-size: 1.15rem; }
+.article-body p  { margin-bottom: 1rem; }
+.article-body ul,
+.article-body ol { margin: 0.5rem 0 1rem 1.5rem; }
+.article-body li { margin-bottom: 0.3rem; }
+.article-body blockquote {
+  border-left: 4px solid #d0d7de;
+  padding: 0.5rem 1rem;
+  color: #57606a;
+  margin: 1rem 0;
 }
+.article-body code {
+  background: #f6f8fa;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.article-body pre {
+  background: #f6f8fa;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.article-body pre code { background: none; padding: 0; font-size: 0.85em; }
+.article-body a { color: #0969da; }
+.article-body hr { border: none; border-top: 1px solid #d0d7de; margin: 2rem 0; }
+.article-body table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+.article-body th, .article-body td {
+  border: 1px solid #d0d7de;
+  padding: 0.4rem 0.8rem;
+}
+.article-body th { background: #f6f8fa; }
+.article-body img { max-width: 100%; height: auto; }
 
-/* Annotazioni */
+/* Paternità */
 .author-human { background-color: rgba(0, 150, 255, 0.15); border-radius: 2px; }
 .author-ai    { background: linear-gradient(90deg,
-                  rgba(255, 0, 150, 0.18), rgba(0, 200, 255, 0.18));
+                  rgba(255, 0, 150, 0.15), rgba(0, 200, 255, 0.15));
                 border-radius: 2px; }
-.author-ref   { opacity: 0.6; }
+.author-ref   { opacity: 0.65; }
 """
 
 
-def render_html(text: str, segments, title: str, source_filename: str) -> str:
-    body_parts = []
-    for start, end, kind in segments:
-        chunk = text[start:end]
-        if kind is None:
-            body_parts.append(escape(chunk))
-        else:
-            css_class = AUTHOR_KIND_CLASS.get(kind, "author-unknown")
-            body_parts.append(f'<span class="{css_class}">{escape(chunk)}</span>')
-
-    body_html = "".join(body_parts)
-
+def build_full_html(body_html: str, title: str, source_filename: str) -> str:
     return f"""<!doctype html>
 <html lang="it">
 <head>
@@ -216,18 +367,20 @@ def render_html(text: str, segments, title: str, source_filename: str) -> str:
     <span class="legend-item">
       <span class="legend-swatch swatch-ai"></span> IA
     </span>
-    <span class="legend-item" style="color:#666; font-size:0.8rem;">
+    <span class="legend-item" style="color:#666; font-size:0.8rem; margin-left:auto;">
       Sorgente: <code>{escape(source_filename)}</code>
     </span>
   </div>
-  <div class="article-body">{body_html}</div>
+  <div class="article-body">
+{body_html}
+  </div>
 </div>
 </body>
 </html>
 """
 
 
-# ── Azioni principali ─────────────────────────────────────────────────────────
+# ── Azioni ────────────────────────────────────────────────────────────────────
 
 
 def render_article(md_path: Path):
@@ -243,16 +396,15 @@ def render_article(md_path: Path):
         print(f"  [skip] {md_path.name}: nessuna annotazione autore trovata")
         return None
 
-    segments = build_segments(text, authors)
-    title = extract_title(text)
-    slug = slugify(md_path.stem)
+    title     = extract_title(text)
+    slug      = slugify(md_path.stem)
+    body_html = render_article_html(text, authors)
 
-    out_dir = DOCS_DIR / slug
+    out_dir  = DOCS_DIR / slug
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "index.html"
 
-    html = render_html(text, segments, title, md_path.name)
-    out_file.write_text(html, encoding="utf-8")
+    out_file.write_text(build_full_html(body_html, title, md_path.name), encoding="utf-8")
 
     url = f"{GITHUB_PAGES_BASE}/articoli/{slug}/"
     print(f"  [ok] {md_path.name} → {out_file}  ({url})")
@@ -260,13 +412,10 @@ def render_article(md_path: Path):
 
 
 def update_readme(articles):
-    readme = Path("README.md")
-
     rows = "\n".join(
-        f"| {escape(a['title'])} | [Apri con annotazioni]({a['url']}) |"
+        f"| {a['title']} | [Apri con annotazioni]({a['url']}) |"
         for a in articles
     )
-
     content = f"""# Articoli generati con IA
 
 Questo repository raccoglie articoli scritti con il supporto dell'intelligenza artificiale.
@@ -282,7 +431,7 @@ che mostrano quali parti sono state scritte dall'umano e quali dall'IA.
 ---
 *I file HTML con evidenziazione della paternità sono generati automaticamente da [`scripts/render_authorship.py`](scripts/render_authorship.py) tramite GitHub Actions.*
 """
-    readme.write_text(content, encoding="utf-8")
+    Path("README.md").write_text(content, encoding="utf-8")
     print(f"  [ok] README.md aggiornato con {len(articles)} articoli")
 
 
@@ -295,21 +444,17 @@ def main():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("input", nargs="?", help="File Markdown sorgente in articoli/")
-    group.add_argument(
-        "--update-readme",
-        action="store_true",
-        help="Scansiona docs/articoli/ e aggiorna README.md",
-    )
+    group.add_argument("--update-readme", action="store_true")
     args = parser.parse_args()
 
     if args.update_readme:
         articles = []
         for index_html in sorted(DOCS_DIR.glob("*/index.html")):
-            slug = index_html.parent.name
+            slug     = index_html.parent.name
             raw_html = index_html.read_text(encoding="utf-8")
-            m = re.search(r"<title>(.*?)</title>", raw_html)
-            title = m.group(1) if m else slug
-            url = f"{GITHUB_PAGES_BASE}/articoli/{slug}/"
+            m        = re.search(r"<title>(.*?)</title>", raw_html)
+            title    = m.group(1) if m else slug
+            url      = f"{GITHUB_PAGES_BASE}/articoli/{slug}/"
             articles.append({"title": title, "slug": slug, "url": url})
         update_readme(articles)
     else:

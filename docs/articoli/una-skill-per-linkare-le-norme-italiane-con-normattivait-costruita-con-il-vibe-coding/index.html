@@ -10,7 +10,7 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.8;
   color: #24292f;
   background: #fff;
 }
@@ -26,6 +26,7 @@ body {
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 2rem;
   padding: 0.75rem 1rem;
   border: 1px solid #d0d7de;
@@ -37,23 +38,59 @@ body {
   display: inline-block;
   width: 14px; height: 14px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
-.swatch-human { background: rgba(0, 150, 255, 0.35); }
-.swatch-ai    { background: linear-gradient(90deg,
-                  rgba(255, 0, 150, 0.45), rgba(0, 200, 255, 0.45)); }
+.swatch-human { background: rgba(0, 150, 255, 0.45); }
+.swatch-ai    { background: linear-gradient(90deg, rgba(255,0,150,0.55), rgba(0,200,255,0.55)); }
 
-/* Testo */
-.article-body {
-  white-space: pre-wrap;
-  word-break: break-word;
+/* Tipografia */
+.article-body h1,
+.article-body h2,
+.article-body h3 { margin: 1.8rem 0 0.6rem; font-weight: 600; line-height: 1.3; }
+.article-body h1 { font-size: 1.9rem; margin-top: 0; }
+.article-body h2 { font-size: 1.4rem; }
+.article-body h3 { font-size: 1.15rem; }
+.article-body p  { margin-bottom: 1rem; }
+.article-body ul,
+.article-body ol { margin: 0.5rem 0 1rem 1.5rem; }
+.article-body li { margin-bottom: 0.3rem; }
+.article-body blockquote {
+  border-left: 4px solid #d0d7de;
+  padding: 0.5rem 1rem;
+  color: #57606a;
+  margin: 1rem 0;
 }
+.article-body code {
+  background: #f6f8fa;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.article-body pre {
+  background: #f6f8fa;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.article-body pre code { background: none; padding: 0; font-size: 0.85em; }
+.article-body a { color: #0969da; }
+.article-body hr { border: none; border-top: 1px solid #d0d7de; margin: 2rem 0; }
+.article-body table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+.article-body th, .article-body td {
+  border: 1px solid #d0d7de;
+  padding: 0.4rem 0.8rem;
+}
+.article-body th { background: #f6f8fa; }
+.article-body img { max-width: 100%; height: auto; }
 
-/* Annotazioni */
+/* Paternità */
 .author-human { background-color: rgba(0, 150, 255, 0.15); border-radius: 2px; }
 .author-ai    { background: linear-gradient(90deg,
-                  rgba(255, 0, 150, 0.18), rgba(0, 200, 255, 0.18));
+                  rgba(255, 0, 150, 0.15), rgba(0, 200, 255, 0.15));
                 border-radius: 2px; }
-.author-ref   { opacity: 0.6; }
+.author-ref   { opacity: 0.65; }
 </style>
 </head>
 <body>
@@ -66,64 +103,73 @@ body {
     <span class="legend-item">
       <span class="legend-swatch swatch-ai"></span> IA
     </span>
-    <span class="legend-item" style="color:#666; font-size:0.8rem;">
+    <span class="legend-item" style="color:#666; font-size:0.8rem; margin-left:auto;">
       Sorgente: <code>Una skill per linkare le norme italiane con Normattiva.it - costruita con il vibe coding.md</code>
     </span>
   </div>
-  <div class="article-body"><span class="author-ai"># Una skill per linkare le norme italiane con Normattiva.it</span><span class="author-human">:</span><span class="author-ai"> costruita con il vibe coding
-</span><span class="author-human">
-&gt; Quello che stai per leggere è un articolo scritto grazie all’IA: ad un LLM, in particolare [Claude Sonnet 4.6](https://www.anthropic.com/claude/sonnet). Fa parte di un esperimento di cui ti parlerò più avanti su queste pagine ma, per ora, mi interessa solo segnalarti la cosa.
-&gt; Se il documento è scritto (prevalentemente) dall’IA, quello che stai leggendo tuttavia nasce dalla mio pensiero; l’IA l’ha eseguito al mio posto ed “impersonandomi” (usando la mia “voce”).
-&gt; [Qui]() trovi l’articolo originale generato completamente dall’IA, l’ultima revisione è la mia e [qui]() trovi la versione che stai leggendo ma con annotate le parti mie e quelle dell’IA.
-&gt; Ultima nota prima di iniziare: ho revisionato questo articolo con [iAWriter](https://ia.net/writer) ed utilizzando le funzioni di [Authorship](https://ia.net/topics/see-what-ai-wrote).
-&gt; **Se ti interessa solo la skill** la puoi scaricare da [qui]().
-</span><span class="author-ai">
-Ho passato anni a dire ai colleghi che </span><span class="author-human">**</span><span class="author-ai">usare bene la tecnologia significa non fare mai due volte la stessa cosa stupida</span><span class="author-human">**</span><span class="author-ai">. Poi un giorno mi sono accorto che costruivo a mano i link a </span><span class="author-human">[</span><span class="author-ai">Normattiva.it</span><span class="author-human">](https://www.normattiva.it)</span><span class="author-ai"> ogni volta che scrivevo un documento con riferimenti normativi</span><span class="author-human">;</span><span class="author-ai"> copia</span><span class="author-human">vo</span><span class="author-ai"> la data di emanazione, </span><span class="author-human">cercavo di ricordarmi</span><span class="author-ai"> che il codice civile è l&#x27;allegato 2 del R.D. 262/1942, </span><span class="author-human">di </span><span class="author-ai">non dimenticare il `;` prima del numero. </span><span class="author-human"> 
-[</span><span class="author-ai">David Sparks chiama questo genere di attività </span><span class="author-human">*</span><span class="author-ai">donkey work</span><span class="author-human">*](</span>https://www.macsparky.com/blog/2026/02/donkey-work-what-i-actually-want-ai-to-do/<span class="author-human">)</span><span class="author-ai">: lavoro da mulo</span><span class="author-human">…</span><span class="author-ai"> meccanico, ripetitivo, che non aggiunge nessun valore intellettuale.</span><span class="author-human">
-</span><span class="author-ai"> </span><span class="author-human">
-Creare i link a Normattiva ha</span><span class="author-ai"> un secondo motivo, tutto pratico: come ti ho già spiegato nei miei articoli sugli [atti telematici avanzati](https://avvocati-e-mac.it/blog/2022/9/27/atti-telematici-avanzati-scritti-in-testo-semplice), i link iper</span><span class="author-human">-</span><span class="author-ai">testuali ai riferimenti normativi sono uno dei requisiti che ti permettono di ottenere l&#x27;aumento del 30% </span><span class="author-human">sulla liquidazione del compenso professionale</span><span class="author-ai">. </span><span class="author-human">
+  <div class="article-body">
+<h1><span class="author-ai">Una skill per linkare le norme italiane con Normattiva.it</span><span class="author-human">:</span><span class="author-ai"> costruita con il vibe coding</span></h1>
+<blockquote>
+<p><span class="author-human">Quello che stai per leggere è un articolo scritto grazie all’IA: ad un LLM, in particolare </span><a href="https://www.anthropic.com/claude/sonnet"><span class="author-human">Claude Sonnet 4.6</span></a>. Fa parte di un esperimento di cui ti parlerò più avanti su queste pagine ma, per ora, mi interessa solo segnalarti la cosa.
+Se il documento è scritto (prevalentemente) dall’IA, quello che stai leggendo tuttavia nasce dalla mio pensiero; l’IA l’ha eseguito al mio posto ed “impersonandomi” (usando la mia “voce”).
+<a href=""><span class="author-human">Qui</span></a><span class="author-human"> trovi l’articolo originale generato completamente dall’IA, l’ultima revisione è la mia e </span><a href=""><span class="author-human">qui</span></a> trovi la versione che stai leggendo ma con annotate le parti mie e quelle dell’IA.
+Ultima nota prima di iniziare: ho revisionato questo articolo con <a href="https://ia.net/writer"><span class="author-human">iAWriter</span></a><span class="author-human"> ed utilizzando le funzioni di </span><a href="https://ia.net/topics/see-what-ai-wrote"><span class="author-human">Authorship</span></a><span class="author-human">.
+</span><strong><span class="author-human">Se ti interessa solo la skill</span></strong><span class="author-human"> la puoi scaricare da </span><a href=""><span class="author-human">qui</span></a><span class="author-human">.</span></p>
+</blockquote>
+<p><span class="author-ai">Ho passato anni a dire ai colleghi che </span><strong><span class="author-ai">usare bene la tecnologia significa non fare mai due volte la stessa cosa stupida</span></strong><span class="author-ai">. Poi un giorno mi sono accorto che costruivo a mano i link a </span><a href="https://www.normattiva.it"><span class="author-ai">Normattiva.it</span></a><span class="author-ai"> ogni volta che scrivevo un documento con riferimenti normativi</span><span class="author-human">;</span><span class="author-ai"> copia</span><span class="author-human">vo</span><span class="author-ai"> la data di emanazione, </span><span class="author-human">cercavo di ricordarmi</span><span class="author-ai"> che il codice civile è l'allegato 2 del R.D. 262/1942, </span><span class="author-human">di </span><span class="author-ai">non dimenticare il </span><code>;</code><span class="author-ai"> prima del numero.</span><br/>
+<a href="https://www.macsparky.com/blog/2026/02/donkey-work-what-i-actually-want-ai-to-do/"><span class="author-ai">David Sparks chiama questo genere di attività </span><em><span class="author-ai">donkey work</span></em></a><span class="author-ai">: lavoro da mulo</span><span class="author-human">…</span><span class="author-ai"> meccanico, ripetitivo, che non aggiunge nessun valore intellettuale.</span></p>
+<p><span class="author-human">Creare i link a Normattiva ha</span><span class="author-ai"> un secondo motivo, tutto pratico: come ti ho già spiegato nei miei articoli sugli </span><a href="https://avvocati-e-mac.it/blog/2022/9/27/atti-telematici-avanzati-scritti-in-testo-semplice"><span class="author-ai">atti telematici avanzati</span></a><span class="author-ai">, i link iper</span><span class="author-human">-</span><span class="author-ai">testuali ai riferimenti normativi sono uno dei requisiti che ti permettono di ottenere l'aumento del 30% </span><span class="author-human">sulla liquidazione del compenso professionale</span><span class="author-ai">.</span></p>
+<p><span class="author-human">In questo mese ho sperimentato molto con l’IA per automatizzare la mia attività lavorativa e c</span><span class="author-ai">osì ho fatto quello che avrei dovuto fare da subito: ho </span><span class="author-human">provato a creare</span><span class="author-ai"> una </span><strong><span class="author-ai">skill per Claude che genera questi link in automatico</span></strong><span class="author-human"> e </span><strong><span class="author-human">ci sono riuscito</span></strong><span class="author-human">!</span></p>
+<p><span class="author-ai">In questo articolo ti racconto cos'è </span><span class="author-human">una</span><span class="author-ai"> skill</span><span class="author-human"> di Claude</span><span class="author-ai">, come funziona, come l'ho costruita </span><span class="author-human">progressivamente </span><span class="author-ai">— prima con </span><strong><span class="author-ai">Perplexity</span></strong><span class="author-ai">, poi con </span><strong><span class="author-ai">Claude Cowork</span></strong><span class="author-ai"> — senza scrivere una riga di codice</span><span class="author-human"> e come l’ho utilizzata in sistemi differenti da Claude</span><span class="author-ai">.</span></p>
+<h2><span class="author-ai">1. Normattiva.it e il sistema URN-NIR</span></h2>
+<p><strong><span class="author-ai">Normattiva.it</span></strong><span class="author-ai"> è il portale ufficiale della normativa italiana, gestito dalla Presidenza del Consiglio dei Ministri. Non è solo un motore di ricerca delle leggi: è una banca dati con URL </span><em><span class="author-ai">stabili e permanenti</span></em><span class="author-ai"> per ogni singolo articolo di ogni norma italiana — dalle leggi ai decreti legislativi, dalla Costituzione ai codici storici.</span></p>
+<p><span class="author-ai">Il sistema che rende possibile tutto questo si chiama </span><strong><span class="author-ai">URN-NIR</span></strong><span class="author-ai"> (Uniform Resource Name – Norme In Rete), uno standard definito originariamente dal CNIPA (oggi AgID). Ogni norma ha un identificatore univoco che non cambia nel tempo, costruito seguendo una struttura precisa.</span></p>
+<p><span class="author-ai">Un link a Normattiva ha questa forma:</span></p>
+<pre><code>https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:{tipo}:{data};{numero}~art{N}
+</code></pre>
+<p><span class="author-ai">Per esempio, l'art. 2043 del codice civile diventa:</span></p>
+<pre><code>https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1942-03-16;262:2~art2043
+</code></pre>
+<h3><span class="author-ai">1.1 La trappola dei</span><span class="author-human"> “grandi”</span><span class="author-ai"> codici</span></h3>
+<p><span class="author-ai">I grandi codici italiani — civile, penale, procedura civile, legge fallimentare — furono approvati nel periodo pre-repubblicano come </span><em><span class="author-ai">allegati numerati</span></em><span class="author-ai"> di Regi Decreti. </span><span class="author-human">Questi codici sono anche quelli più utilizzati abitualmente nei documenti legali.
+Sono anche quelli con una particolarità specifica: n</span><span class="author-ai">ell'URN bisogna indicare anche il numero dell'allegato, dopo il numero del decreto, separato da </span><code>:</code><span class="author-ai">.</span></p>
+<table>
+<thead>
+<tr>
+<th><span class="author-ai">Codice</span></th>
+<th><span class="author-ai">R.D.</span></th>
+<th><span class="author-ai">Allegato</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="author-ai">Codice civile</span></td>
+<td><span class="author-ai">R.D. 262/1942</span></td>
+<td><code>:2</code></td>
+</tr>
+<tr>
+<td><span class="author-ai">Cod. proc. civile</span></td>
+<td><span class="author-ai">R.D. 1443/1940</span></td>
+<td><code>:1</code></td>
+</tr>
+<tr>
+<td><span class="author-ai">Codice penale</span></td>
+<td><span class="author-ai">R.D. 1398/1930</span></td>
+<td><code>:1</code></td>
+</tr>
+<tr>
+<td><span class="author-ai">Legge fallimentare</span></td>
+<td><span class="author-ai">R.D. 267/1942</span></td>
+<td><code>:1</code></td>
+</tr>
+</tbody>
+</table>
+<p><span class="author-ai">Se ometti il numero allegato, il link porta</span><span class="author-human"> irrimediabilmente al primo articolo</span><span class="author-ai"> </span><span class="author-human">de</span><span class="author-ai">l Regio Decreto originale — non al</span><span class="author-human"> numero specifico dell’articolo del</span><span class="author-ai"> codice</span><span class="author-human"> indicato</span><span class="author-ai">. È un errore che si fa facilmente se non si conosce questa particolarità</span><span class="author-human"> ed è la prima grossa barriera nell’utilizzo di Normattiva.it da parte dell’avvocato inesperto</span><span class="author-ai">.</span></p>
+<h3><span class="author-ai">1.2 La data di emanazione, non quella della G.U.</span></h3>
+<p><span class="author-ai">La data nell'URN è quella di </span><em><span class="author-ai">emanazione</span></em><span class="author-ai"> dell'atto — quando il provvedimento è stato firmato — non quella di pubblicazione in Gazzetta Ufficiale. Possono differire di giorni o settimane. Usare la data sbagliata genera un link rotto.</span><span class="author-human"> Inoltre, raramente ci si ricorda della data specifica di una Legge, quindi creare i link a memoria è praticamente impossibile.</span></p>
+<p><span class="author-ai">Normattiva mette già a disposizione un </span><a href="https://www.normattiva.it/staticPage/utilita"><span class="author-ai">parser normativo</span></a><span class="author-ai"> incorporato nel portale, che analizza testi giuridici e trasforma i riferimenti in link URN. Il problema è che funziona solo sul sito — non è qualcosa che puoi integrare nel tuo flusso di lavoro esterno.</span></p>
 
-In questo mese ho sperimentato molto con l’IA per automatizzare la mia attività lavorativa e c</span><span class="author-ai">osì ho fatto quello che avrei dovuto fare da subito: ho </span><span class="author-human">provato a creare</span><span class="author-ai"> una </span><span class="author-human">**</span><span class="author-ai">skill per Claude che genera questi link in automatico</span><span class="author-human">** e **ci sono riuscito**!</span><span class="author-ai"> </span><span class="author-human">
-
-</span><span class="author-ai">In questo articolo ti racconto cos&#x27;è </span><span class="author-human">una</span><span class="author-ai"> skill</span><span class="author-human"> di Claude</span><span class="author-ai">, come funziona, come l&#x27;ho costruita </span><span class="author-human">progressivamente </span><span class="author-ai">— prima con **Perplexity**, poi con **Claude Cowork** — senza scrivere una riga di codice</span><span class="author-human"> e come l’ho utilizzata in sistemi differenti da Claude</span><span class="author-ai">.
-
-## 1. Normattiva.it e il sistema URN-NIR
-
-**Normattiva.it** è il portale ufficiale della normativa italiana, gestito dalla Presidenza del Consiglio dei Ministri. Non è solo un motore di ricerca delle leggi: è una banca dati con URL </span><span class="author-human">_</span><span class="author-ai">stabili e permanenti</span><span class="author-human">_</span><span class="author-ai"> per ogni singolo articolo di ogni norma italiana — dalle leggi ai decreti legislativi, dalla Costituzione ai codici storici.
-
-Il sistema che rende possibile tutto questo si chiama **URN-NIR** (Uniform Resource Name – Norme In Rete), uno standard definito originariamente dal CNIPA (oggi AgID). Ogni norma ha un identificatore univoco che non cambia nel tempo, costruito seguendo una struttura precisa.
-
-Un link a Normattiva ha questa forma:
-
-```
-https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:{tipo}:{data};{numero}~art{N}
-```
-
-Per esempio, l&#x27;art. 2043 del codice civile diventa:
-
-```
-https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1942-03-16;262:2~art2043
-```
-
-### 1.1 La trappola dei</span><span class="author-human"> “grandi”</span><span class="author-ai"> codici
-
-I grandi codici italiani — civile, penale, procedura civile, legge fallimentare — furono approvati nel periodo pre-repubblicano come *allegati numerati* di Regi Decreti. </span><span class="author-human">Questi codici sono anche quelli più utilizzati abitualmente nei documenti legali.
-Sono anche quelli con una particolarità specifica: n</span><span class="author-ai">ell&#x27;URN bisogna indicare anche il numero dell&#x27;allegato, dopo il numero del decreto, separato da </span><span class="author-human">`</span><span class="author-ai">:`.
-
-| Codice | R.D. | Allegato |
-|--------|------|----------|
-| Codice civile | R.D. 262/1942 | `:2` |
-| Cod. proc. civile | R.D. 1443/1940 | `:1` |
-| Codice penale | R.D. 1398/1930 | `:1` |
-| Legge fallimentare | R.D. 267/1942 | `:1` |
-
-Se ometti il numero allegato, il link porta</span><span class="author-human"> irrimediabilmente al primo articolo</span><span class="author-ai"> </span><span class="author-human">de</span><span class="author-ai">l Regio Decreto originale — non al</span><span class="author-human"> numero specifico dell’articolo del</span><span class="author-ai"> codice</span><span class="author-human"> indicato</span><span class="author-ai">. È un errore che si fa facilmente se non si conosce questa particolarità</span><span class="author-human"> ed è la prima grossa barriera nell’utilizzo di Normattiva.it da parte dell’avvocato inesperto</span><span class="author-ai">.
-
-### 1.2 La data di emanazione, non quella della G.U.
-
-La data nell&#x27;URN è quella di *emanazione* dell&#x27;atto — quando il provvedimento è stato firmato — non quella di pubblicazione in Gazzetta Ufficiale. Possono differire di giorni o settimane. Usare la data sbagliata genera un link rotto.</span><span class="author-human"> Inoltre, raramente ci si ricorda della data specifica di una Legge, quindi creare i link a memoria è praticamente impossibile.</span><span class="author-ai">
-
-Normattiva mette già a disposizione un [parser normativo](https://www.normattiva.it/staticPage/utilita) incorporato nel portale, che analizza testi giuridici e trasforma i riferimenti in link URN. Il problema è che funziona solo sul sito — non è qualcosa che puoi integrare nel tuo flusso di lavoro esterno.</span></div>
+  </div>
 </div>
 </body>
 </html>
