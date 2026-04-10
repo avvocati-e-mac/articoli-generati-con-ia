@@ -41,6 +41,8 @@ CLAUDE.md          ← Questo file
 
 4. **GitHub Actions parte automaticamente** (trigger: push di `*.md` in `articoli/`).
    In circa 15 secondi genera l'HTML e aggiorna il README con il nuovo link.
+   Il commit automatico avviene solo se i file sono effettivamente cambiati
+   (nessun commit vuoto se si rigenera un articolo già esistente senza modifiche).
 
 5. **L'URL pubblico** sarà:
    ```
