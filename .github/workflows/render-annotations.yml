@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'articoli/**.md'
+      - 'articoli-rev-umana/**.md'
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - name: Render annotations for all articles
         run: |
           mkdir -p docs/articoli
-          for f in articoli/*.md; do
+          for f in articoli-rev-umana/*.md; do
             echo "Rendering: $f"
             python3 scripts/render_authorship.py "$f"
           done

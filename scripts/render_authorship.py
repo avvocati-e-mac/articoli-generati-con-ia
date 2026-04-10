@@ -10,7 +10,7 @@ Strategia:
   4. Sostituisce i nodi testo con frammenti HTML con <span>.
 
 Uso:
-  python3 scripts/render_authorship.py articoli/mio-articolo.md
+  python3 scripts/render_authorship.py articoli-rev-umana/mio-articolo.md
   python3 scripts/render_authorship.py --update-readme
 
 Dipendenze:
@@ -28,6 +28,8 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 
 GITHUB_PAGES_BASE = "https://avvocati-e-mac.github.io/articoli-generati-con-ia"
 DOCS_DIR = Path("docs/articoli")
+AI_SOURCE_DIR = Path("articolo-gen-ia")
+GITHUB_REPO   = "avvocati-e-mac/articoli-generati-con-ia"
 
 AUTHOR_KIND_CLASS = {
     "@": "author-human",
@@ -270,6 +272,22 @@ def extract_title(text: str) -> str:
     return "Articolo"
 
 
+def build_ai_banner(filename: str) -> str:
+    """Restituisce HTML del banner se articolo-gen-ia/{filename} esiste, altrimenti ''."""
+    if not (AI_SOURCE_DIR / filename).exists():
+        return ""
+    github_url = (
+        f"https://github.com/{GITHUB_REPO}/blob/main/"
+        f"articolo-gen-ia/{filename}"
+    )
+    return (
+        '<div class="ai-version-banner">\n'
+        "  \U0001f916 <strong>Leggi anche la versione generata interamente dall'IA</strong>"
+        f'  &nbsp;\u2192&nbsp; <a href="{github_url}">Vai alla versione AI-only</a>\n'
+        '</div>\n'
+    )
+
+
 # ── CSS ───────────────────────────────────────────────────────────────────────
 
 CSS = """
@@ -357,10 +375,28 @@ body {
 .author-human { background-color: rgba(34, 197, 94, 0.25); border-radius: 2px; }
 .author-ai    { background-color: rgba(249, 115, 22, 0.22); border-radius: 2px; }
 .author-ref   { opacity: 0.65; }
+
+/* Banner versione AI-only */
+.ai-version-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.8rem;
+  padding: 0.75rem 1.1rem;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-left: 4px solid #f97316;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #7c2d12;
+}
+.ai-version-banner a { color: #c2410c; font-weight: 600; }
+.ai-version-banner a:hover { text-decoration: underline; }
 """
 
 
-def build_full_html(body_html: str, title: str, source_filename: str) -> str:
+def build_full_html(body_html: str, title: str, source_filename: str, ai_banner: str = "") -> str:
     return f"""<!doctype html>
 <html lang="it">
 <head>
@@ -384,7 +420,7 @@ def build_full_html(body_html: str, title: str, source_filename: str) -> str:
     </span>
   </div>
   <div class="article-body">
-{body_html}
+{ai_banner}{body_html}
   </div>
 </div>
 </body>
@@ -416,7 +452,8 @@ def render_article(md_path: Path):
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "index.html"
 
-    out_file.write_text(build_full_html(body_html, title, md_path.name), encoding="utf-8")
+    ai_banner = build_ai_banner(md_path.name)
+    out_file.write_text(build_full_html(body_html, title, md_path.name, ai_banner=ai_banner), encoding="utf-8")
 
     url = f"{GITHUB_PAGES_BASE}/articoli/{slug}/"
     print(f"  [ok] {md_path.name} → {out_file}  ({url})")
@@ -455,7 +492,7 @@ def main():
         description="Rende visibili le annotazioni di iA Writer su GitHub Pages"
     )
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("input", nargs="?", help="File Markdown sorgente in articoli/")
+    group.add_argument("input", nargs="?", help="File Markdown sorgente in articoli-rev-umana/")
     group.add_argument("--update-readme", action="store_true")
     args = parser.parse_args()
 

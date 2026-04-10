@@ -8,7 +8,8 @@ Leggilo all'inizio di ogni sessione prima di toccare qualsiasi file.
 ## Struttura del progetto
 
 ```
-articoli/          ← File .md sorgente con annotazioni iA Writer (NON modificare)
+articoli-rev-umana/     ← File .md revisionati dall'umano, con annotazioni iA Writer (NON modificare)
+articolo-gen-ia/        ← File .md generati dall'IA pura, stesso nome file (NON modificare)
 scripts/
   render_authorship.py   ← Script di conversione MD → HTML annotato
 docs/
@@ -29,17 +30,22 @@ CLAUDE.md          ← Questo file
 1. **Scrivi e revisiona l'articolo in iA Writer** con la funzione Authorship attiva,
    in modo che le annotazioni `@` (umano) e `&` (IA) vengano salvate nel file.
 
-2. **Copia il file `.md` nella cartella `articoli/`** del progetto.
+2. **Copia il file `.md` nella cartella `articoli-rev-umana/`** del progetto.
    Il nome del file diventa lo slug dell'URL — usa nomi descrittivi in italiano.
+
+2b. *(Opzionale)* **Se hai anche la versione generata dall'IA**, salvala con lo stesso nome
+    nella cartella `articolo-gen-ia/`. Lo script rileverà il file automaticamente e inserirà
+    un banner in cima all'HTML con il link alla versione AI-only su GitHub.
 
 3. **Fai commit e push su `main`**:
    ```bash
-   git add articoli/nome-articolo.md
+   git add articoli-rev-umana/nome-articolo.md
+   git add articolo-gen-ia/nome-articolo.md   # se esiste
    git commit -m "feat: aggiungi articolo 'titolo'"
    git push
    ```
 
-4. **GitHub Actions parte automaticamente** (trigger: push di `*.md` in `articoli/`).
+4. **GitHub Actions parte automaticamente** (trigger: push di `*.md` in `articoli-rev-umana/`).
    In circa 15 secondi genera l'HTML e aggiorna il README con il nuovo link.
    Il commit automatico avviene solo se i file sono effettivamente cambiati
    (nessun commit vuoto se si rigenera un articolo già esistente senza modifiche).
@@ -51,7 +57,7 @@ CLAUDE.md          ← Questo file
    dove `{slug}` è il nome del file (senza `.md`), normalizzato in ASCII minuscolo
    con trattini. Esempio:
    ```
-   articoli/Il mio articolo.md
+   articoli-rev-umana/Il mio articolo.md
    → https://avvocati-e-mac.github.io/…/articoli/il-mio-articolo/
    ```
 
@@ -75,10 +81,10 @@ Dalla root del progetto:
 
 ```bash
 # Renderizza un singolo articolo
-python3 scripts/render_authorship.py "articoli/nome-articolo.md"
+python3 scripts/render_authorship.py "articoli-rev-umana/nome-articolo.md"
 
 # Rigenera tutti gli articoli
-for f in articoli/*.md; do
+for f in articoli-rev-umana/*.md; do
   python3 scripts/render_authorship.py "$f"
 done
 
@@ -102,7 +108,9 @@ pip3 install mistune beautifulsoup4 --break-system-packages
 3. Converte il Markdown in HTML strutturato con **mistune**.
 4. Visita ogni nodo testo dell'HTML con **BeautifulSoup**, cerca la stringa
    corrispondente nel sorgente Markdown originale, e applica gli `<span>` di paternità.
-5. Scrive `docs/articoli/{slug}/index.html`.
+5. Se esiste un file con lo stesso nome in `articolo-gen-ia/`, inserisce in cima
+   all'articolo un banner arancione con link alla versione AI-only su GitHub.
+6. Scrive `docs/articoli/{slug}/index.html`.
 
 **Colori paternità:**
 - Verde `#22c55e` → testo scritto dall'umano (`@`)
