@@ -1,0 +1,38 @@
+name: Render iA Writer Annotations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'articoli/**.md'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Render annotations for all articles
+        run: |
+          mkdir -p docs/articoli
+          for f in articoli/*.md; do
+            echo "Rendering: $f"
+            python3 scripts/render_authorship.py "$f"
+          done
+
+      - name: Update README with article list
+        run: python3 scripts/render_authorship.py --update-readme
+
+      - name: Commit generated files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: aggiorna HTML annotazioni e README"
+          file_pattern: "docs/ README.md"
