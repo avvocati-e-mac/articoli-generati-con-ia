@@ -43,14 +43,27 @@ ANNOTATION_BLOCK_END   = re.compile(r"^\s*\.\.\.\s*$")
 
 
 def split_text_and_annotations(raw: str):
+    """
+    Trova il blocco annotazioni iA Writer: un blocco --- ... dove la prima
+    riga dopo --- inizia con 'Annotazioni:' o 'Annotations:'.
+    Cerca dall'ultima occorrenza di --- per ignorare i <hr> nel corpo.
+    """
     lines = raw.splitlines(keepends=True)
+
+    # Cerca dall'ultima riga --- verso l'inizio
     start_idx = None
-    for i, line in enumerate(lines):
-        if ANNOTATION_BLOCK_START.match(line):
-            start_idx = i
-            break
+    for i in range(len(lines) - 1, -1, -1):
+        if ANNOTATION_BLOCK_START.match(lines[i]):
+            # Verifica che la riga successiva sia un'intestazione annotazioni
+            if i + 1 < len(lines) and re.match(
+                r"^\s*Annotazioni?:", lines[i + 1], re.IGNORECASE
+            ):
+                start_idx = i
+                break
+
     if start_idx is None:
         return raw, ""
+
     end_idx = None
     for j in range(start_idx + 1, len(lines)):
         if ANNOTATION_BLOCK_END.match(lines[j]):
@@ -58,6 +71,7 @@ def split_text_and_annotations(raw: str):
             break
     if end_idx is None:
         return raw, ""
+
     text_part = "".join(lines[:start_idx]).rstrip("\n")
     return text_part, "".join(lines[start_idx: end_idx + 1])
 
@@ -294,8 +308,8 @@ body {
   border-radius: 3px;
   flex-shrink: 0;
 }
-.swatch-human { background: rgba(0, 150, 255, 0.45); }
-.swatch-ai    { background: linear-gradient(90deg, rgba(255,0,150,0.55), rgba(0,200,255,0.55)); }
+.swatch-human { background: #22c55e; }
+.swatch-ai    { background: #f97316; }
 
 /* Tipografia */
 .article-body h1,
@@ -340,10 +354,8 @@ body {
 .article-body img { max-width: 100%; height: auto; }
 
 /* Paternità */
-.author-human { background-color: rgba(0, 150, 255, 0.15); border-radius: 2px; }
-.author-ai    { background: linear-gradient(90deg,
-                  rgba(255, 0, 150, 0.15), rgba(0, 200, 255, 0.15));
-                border-radius: 2px; }
+.author-human { background-color: rgba(34, 197, 94, 0.25); border-radius: 2px; }
+.author-ai    { background-color: rgba(249, 115, 22, 0.22); border-radius: 2px; }
 .author-ref   { opacity: 0.65; }
 """
 
